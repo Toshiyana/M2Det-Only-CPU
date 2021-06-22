@@ -39,7 +39,11 @@ def init_net(net, cfg, resume_net):
         net.init_model(cfg.model.pretrained)
     else:
         print('Loading resume network...')
-        state_dict = torch.load(resume_net)
+        
+        # gpuを利用
+        # state_dict = torch.load(resume_net)
+        # cpuのみを利用
+        state_dict = torch.load(resume_net, map_location=torch.device('cpu'))
 
         from collections import OrderedDict
         new_state_dict = OrderedDict()
@@ -50,6 +54,7 @@ def init_net(net, cfg, resume_net):
             else:
                 name = k
             new_state_dict[name] = v
+        
         net.load_state_dict(new_state_dict,strict=False)
 
 def set_optimizer(net, cfg):

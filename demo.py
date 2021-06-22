@@ -37,14 +37,20 @@ net = build_net('test',
 init_net(net, cfg, args.trained_model)
 print_info('===> Finished constructing and loading model',['yellow','bold'])
 net.eval()
+
+cfg.test_cfg.cuda = False # cpuを利用、gpuを用いる場合はこの行をコメントすれば良い（勝手にtrueになるっぽい）
+
 with torch.no_grad():
     priors = priorbox.forward()
-    if cfg.test_cfg.cuda:
+
+    if cfg.test_cfg.cuda: # gpuを利用
         net = net.cuda()
         priors = priors.cuda()
         cudnn.benchmark = True
     else:
-        net = net.cpu()
+        net = net.cpu() # cpuを利用
+
+
 _preprocess = BaseTransform(cfg.model.input_size, cfg.model.rgb_means, (2, 0, 1))
 detector = Detect(cfg.model.m2det_config.num_classes, cfg.loss.bkg_label, anchor_config)
 
@@ -118,8 +124,10 @@ while True:
     loop_start = time.time()
     w,h = image.shape[1],image.shape[0]
     img = _preprocess(image).unsqueeze(0)
+
     if cfg.test_cfg.cuda:
         img = img.cuda()
+
     scale = torch.Tensor([w,h,w,h])
     out = net(img)
     boxes, scores = detector.forward(out, priors)

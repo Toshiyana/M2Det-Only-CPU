@@ -6,9 +6,10 @@
 # --------------------------------------------------------
 
 from .nms.cpu_nms import cpu_nms, cpu_soft_nms
-from .nms.gpu_nms import gpu_nms
+# gpuを使わないのでコメント
+# from .nms.gpu_nms import gpu_nms
 
-
+# このブロックはは元々コメントされていた
 # def nms(dets, thresh, force_cpu=False):
 #     """Dispatch to either CPU or GPU NMS implementations."""
 #
@@ -27,5 +28,5 @@ def nms(dets, thresh, force_cpu=False):
         return []
     if force_cpu:
         return cpu_soft_nms(dets, thresh, method = 1)
-        #return cpu_nms(dets, thresh)
-    return gpu_nms(dets, thresh)
+        #return cpu_nms(dets, thresh) # 元々コメント
+    # return gpu_nms(dets, thresh)# gpuを使わないので自分でコメント

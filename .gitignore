@@ -29,3 +29,6 @@ venv.bak/
 .spyderproject
 .spyproject
 
+# 追記
+weights/
+vgg16_reducedfc.pth
