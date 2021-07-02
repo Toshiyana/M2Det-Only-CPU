@@ -7,7 +7,15 @@
 * mac + conda
 * docker
 
-## パターン1: anacondaによる環境構築
+# 実行方法
+## 手順1
+weightsというフォルダを作成。
+重みファイル（m2det512_vgg）を
+[google drive](https://drive.google.com/file/d/1NM1UDdZnwHwiNDxhcP-nndaWj24m-90L/view?usp=sharing)
+からダウンロードし、weightsフォルダに配置。
+
+## 手順2
+### パターン1: anacondaによる環境構築
 1. anacondaでpythonの仮想環境を作る(pythonのバージョンは3.7)
 
 2. requirements.txtから必要なライブラリをインストール
@@ -20,9 +28,9 @@ pip install -r requirements.txt
 python demo.py -c=configs/m2det512_vgg.py -m=weights/m2det512_vgg.pth --show
 ```
 
-## パターン2: dockerによる環境構築
+### パターン2: dockerによる環境構築
 dockerとは何かを理解したい方は以下を参照。（理解できていなくても問題ないです）
-https://knowledge.sakura.ad.jp/13265/
+* https://knowledge.sakura.ad.jp/13265/
 
 
 コマンドを実行する前にdockerという仮想環境を作るtoolをダウンロード。以下が参考になるかも。
@@ -54,10 +62,10 @@ docker-compose exec python3 bash
 python demo.py -c=configs/m2det512_vgg.py -m=weights/m2det512_vgg.pth --show
 ```
 
-### 注意
+#### 注意
 demo.py実行時に、途中でKilledと出力された場合、dockerの設定からresourceのmemoryを2GBから8GBぐらいに増やす。
 
-### docker補足コマンド
+#### docker補足コマンド
 * コンテナから抜ける
 ```
 exit
