@@ -13,8 +13,25 @@ from data import BaseTransform
 from utils.core import *
 from utils.pycocotools.coco import COCO
 
+input_dir = "カウンター_画角150_0528"
+# カウンター_画角120_0602, noblur
+# カウンター_画角150_0528
+# カウンター_画角150_0602
+# 客席右方_画角120_0603, noblur
+# 客席右方_画角150_0528
+# 客席右方_画角150_0602
+# 客席右方_画角150_0603
+# 客席左方_画角120_0528, noblurcolab
+# 客席中央_画角120_0603,noblur
+# 客席中央_画角150_0528,noblur
+# 客席中央_画角150_0603
+
+person_num_list = []
+
 parser = argparse.ArgumentParser(description='M2Det Testing')
 parser.add_argument('-c', '--config', default='configs/m2det320_vgg.py', type=str)
+# ここでファイルのパスを指定
+# parser.add_argument('-f', '--directory', default=input_dir, help='the path to demo images')
 parser.add_argument('-f', '--directory', default='imgs/', help='the path to demo images')
 parser.add_argument('-m', '--trained_model', default=None, type=str, help='Trained state_dict file path to open')
 parser.add_argument('--video', default=False, type=bool, help='videofile mode')
@@ -79,6 +96,7 @@ def draw_detection(im, bboxes, scores, cls_inds, fps, thr=0.2):
                       (box[0], box[1]), (box[2], box[3]),
                       colors[cls_indx], thick)
         mess = '%s: %.3f' % (labels[cls_indx], scores[i])
+
         cv2.putText(imgcv, mess, (box[0], box[1] - 7),
                     0, 1e-3 * h, colors[cls_indx], thick // 3)
         if fps >= 0:
@@ -86,9 +104,58 @@ def draw_detection(im, bboxes, scores, cls_inds, fps, thr=0.2):
 
     return imgcv
 
+def draw_detection_blur(im, bboxes, scores, cls_inds, fps, thr=0.2):
+    imgcv = np.copy(im)
+    imgcv_blur = cv2.blur(imgcv, (15,15))
+    result = imgcv
+    h, w, _ = imgcv.shape
+    thick = int((h + w) / 500)
+    num_person = 0
+
+    for i, box in enumerate(bboxes):
+
+        cls_indx = int(cls_inds[i])
+        if scores[i] < thr or labels[cls_indx] != "person":#人物でない場合、検出せずに処理をスキップ（人物のみを検出）
+            continue
+
+        num_person += 1
+        box = [int(_) for _ in box]
+        
+        #検出部ぼけオプション 1:検出部のみ　0:全体　ぼけなしの場合はコメントアウト
+        if 0:
+          for y in range(box[3] - box[1]):
+            for x in range(box[2] - box[0]):
+              result[y + box[1]][x + box[0]] = imgcv_blur[y + box[1]][x + box[0]]
+        else:
+          result = imgcv_blur
+
+        cv2.rectangle(result,
+                      (box[0], box[1]), (box[2], box[3]),
+                      colors[cls_indx], thick)
+
+        # print("num:", cls_indx)
+        # print("hello:", labels[cls_indx])
+
+        # mess = '%s: %.3f' % (labels[cls_indx], scores[i])
+        # cv2.putText(imgcv, mess, (box[0], box[1] - 7),
+        #             0, 1e-3 * h, colors[cls_indx], thick // 3)
+        # if fps >= 0:
+        #     cv2.putText(imgcv, '%.2f' % fps + ' fps', (w - 160, h - 15), 0, 2e-3 * h, (255, 255, 255), thick // 2)
+
+    #人数表示オプション
+    mess = 'Person: %d' % (num_person)
+    cv2.putText(result, mess, (w // 50, h // 15),
+                0, 2e-3 * h, 0, thick // 1)
+
+    person_num_list.append(num_person)
+
+    return result
+
+
 im_path = args.directory
 cam = args.cam
 video = args.video
+num_frame = 0
 if cam >= 0:
     capture = cv2.VideoCapture(cam)
     video_path = './cam'
@@ -155,23 +222,37 @@ while True:
     print('\n'.join(['pos:{}, ids:{}, score:{:.3f}'.format('(%.1f,%.1f,%.1f,%.1f)' % (o[0],o[1],o[2],o[3]) \
             ,labels[int(oo)],ooo) for o,oo,ooo in zip(boxes,cls_inds,scores)]))
     fps = 1.0 / float(loop_time) if cam >= 0 or video else -1
-    im2show = draw_detection(image, boxes, scores, cls_inds, fps)
+    
+    # im2show = draw_detection(image, boxes, scores, cls_inds, fps)
+    im2show = draw_detection_blur(image, boxes, scores, cls_inds, fps)
+
     # print bbox_pred.shape, iou_pred.shape, prob_pred.shape
 
     if im2show.shape[0] > 1100:
         im2show = cv2.resize(im2show,
                              (int(1000. * float(im2show.shape[1]) / im2show.shape[0]), 1000))
-    if args.show:
-        cv2.imshow('test', im2show)
-        if cam < 0 and not video:
-            cv2.waitKey(5000)
-        else:
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                cv2.destroyAllWindows()
-                out_video.release()
-                capture.release()
-                break
+
+    # 出力の表示
+    # if args.show:
+    #     cv2.imshow('test', im2show)
+    #     if cam < 0 and not video:
+    #         cv2.waitKey(5000)
+    #     else:
+    #         if cv2.waitKey(1) & 0xFF == ord('q'):
+    #             cv2.destroyAllWindows()
+    #             out_video.release()
+    #             capture.release()
+    #             break
+
     if cam < 0 and not video:
-        cv2.imwrite('{}_m2det.jpg'.format(fname.split('.')[0]), im2show)
+        # cv2.imwrite('{}_m2det.jpg'.format(fname.split('.')[0]), im2show)
+        # cv2.imwrite('./results_noblur/'+ input_dir + '/m2det_%03d' % num_frame +'.jpg', im2show)
+        cv2.imwrite('./result/m2det_%03d' % num_frame +'.jpg', im2show)
+        num_frame += 1
     else:
         out_video.write(im2show)
+
+
+# with open('./person_num_txt/' + input_dir + '.txt', 'w') as f:
+#     for d in person_num_list:
+#         f.write("%s\n" % d)
